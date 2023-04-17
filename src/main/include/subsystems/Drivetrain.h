@@ -178,4 +178,8 @@ class Drivetrain : public frc2::SubsystemBase {
         LINEAR_SLEW_RATE, -LINEAR_SLEW_RATE, 0_mps};
     frc::SlewRateLimiter<units::degrees_per_second> _angleSlewRateFilter{
         ANGULAR_SLEW_RATE, -ANGULAR_SLEW_RATE, 0_deg_per_s};
+
+    double _xICoefficient = 0.01;
+    double _xIntegral     = 0;
+    double _xICap         = 1.0;
 };

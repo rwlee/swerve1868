@@ -251,7 +251,10 @@ void Drivetrain::TargetCentricDrive(meters_per_second_t translationX,
 void Drivetrain::ChaseStaticTargetDrive()
 {
     auto currentPose = GetPose();
-
+    auto xPD         = _xController.Calculate(currentPose.X().value());
+    auto xError      = _xController.GetError();
+    _xIntegral += xError;
+    _xIntegral = std::clamp(_xIntegral, -_xICap, _xICap);
     // TODO Replace with slewing drive (?)
     // TODO AtSetpoint logic is flawed (intially will return true rather than forcing an initial
     // false eval) logic needs to be redone around it
@@ -261,7 +264,7 @@ void Drivetrain::ChaseStaticTargetDrive()
         //     ? 0_mps
         //     // : meters_per_second_t{_xProfiledController.Calculate(currentPose.X())},
         //     : meters_per_second_t{_xController.Calculate(currentPose.X().value())},
-        meters_per_second_t{_xController.Calculate(currentPose.X().value())},
+        meters_per_second_t{xPD + (_xICoefficient * _xIntegral)},
         // _yProfiledController.AtGoal()
         // _yController.AtSetpoint()
         //     ? 0_mps
@@ -283,9 +286,11 @@ void Drivetrain::SetStaticTarget(frc::Pose2d goalPose)
     _angleProfiledController.SetGoal(goalPose.Rotation().Degrees());
 
     _xController.Reset();
+    _xIntegral = 0;
     _yController.Reset();
     _angleController.Reset();
     _xController.SetSetpoint(goalPose.X().value());
+    _xIntegral = 0;
     _yController.SetSetpoint(goalPose.Y().value());
     _angleController.SetSetpoint(goalPose.Rotation().Degrees().value());
 }
@@ -302,6 +307,7 @@ void Drivetrain::ChaseDynamicTargetDrive(frc::Pose2d visionTarget,
         _angleProfiledController.SetGoal(goalPose.Rotation().Degrees());
 
         _xController.SetSetpoint(goalPose.X().value());
+        _xIntegral = 0;
         _yController.SetSetpoint(goalPose.Y().value());
         _angleController.SetSetpoint(goalPose.Rotation().Degrees().value());
     }
